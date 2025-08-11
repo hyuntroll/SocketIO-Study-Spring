@@ -1,0 +1,20 @@
+#spring.application.name=SocketIO-Study-Spring
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/bootex
+    username: bootuser
+    password: Bootuser123!@#
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+
+socketio:
+  server:
+    hostname: "127.0.0.1"
+    port: 8081
