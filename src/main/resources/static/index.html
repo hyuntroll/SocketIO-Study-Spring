@@ -40,7 +40,7 @@
         }
 
         .chmessage {
-            background-color: rgb(104, 104, 104);
+            background-color: rgb(195, 195, 195);
             margin-bottom: 5px;
         }
 
@@ -101,6 +101,10 @@
         status.classList.remove("connected");
         status.classList.add("disconnected");
     })
+
+    socket.on("message", ({user,message}) => {
+        buildChatting(user, message, false);
+    });
 
 
     function buildChatting(user, message, is_mine) {
