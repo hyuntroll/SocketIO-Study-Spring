@@ -48,6 +48,18 @@
             background-color: rgb(255, 223, 81);
         }
 
+        .alert {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .alert.connect {
+            background-color: greenyellow;
+        }
+        .alert.disconnect {
+            background-color: red;
+        }
+
         #chat-input {
             width: 100%;
             height: 30px;
@@ -57,7 +69,19 @@
         input#name {
             border:none;
         }
+
+        .is-chatting {
+            height: 400px;
+            max-width: 1000px;
+            background-color: rgba(212, 212, 212, 0.8);
+        }
+
+        .is-chatting span {
+            display: block;
+        }
     </style>
+
+    <!-- 1 : 1, 비밀번호 방 ( 예전에 만들었던 브롤스타즈 그거 느낌으로, 내용 저장) , discord ...-->
 </head>
 <body>
     <div class="status disconnected"></div>
@@ -67,6 +91,8 @@
     <span>sessionId: </span><span class="sessionId">undefined</span>
 
     <div class="chat">
+        <div class="alert connect">TEST1님이 입장하셨습니다.</div>
+        <div class="alert disconnect">TEST1님이 퇴장하셨습니다.</div>
         <div class="chmessage mine">
             <p class="user">TEST1</p>
             <span class="message">이건 좀 아닌듯;</span>
@@ -75,6 +101,10 @@
     </div>
     <input type="text" id="chat-input" placeholder="채팅을 입력해주세요..." onkeypress="sendMessage(event)">
     <input type="button" value="전송" id="submit" onclick="sendMessage(event)">
+
+    <div class="is-chatting">
+        <span>TEST1님이 채팅중</span>
+    </div>
 </body>
 
 
@@ -85,6 +115,7 @@
     const chatInput = document.getElementById("chat-input");
     const submitButton = document.getElementById("submit");
     const nameInput = document.getElementById("name");
+    const chattingDiv = document.querySelector(".is-chatting");
 
     let socket;
 
@@ -108,8 +139,13 @@
             socket.on("message", ({user,message}) => {
                 buildChatting(user, message, false);
             });
-                }
+
+            socket.on("user_status", ({userId, connectStatus}) => {
+                alertMessage(connectStatus, {user: userId});
+            });
+
             }
+        }
 
     function socketDisConnect() { 
         if (!socket || socket.connected)
@@ -144,7 +180,11 @@
 
     function sendMessage(event) {
 
-        if (event instanceof KeyboardEvent && !(event.key === "Enter")) { return ;}
+        if (event instanceof KeyboardEvent && !(event.key === "Enter")) { 
+            console.log(event.key);
+
+            return ;
+        }
 
         let name = nameInput.value;
         if (!chatInput.value || !nameInput.value) { return ; }
@@ -161,6 +201,30 @@
         
     };
 
+    function alertMessage(type, content) {
+        const alert = document.createElement("div");
+        alert.classList.add("alert");
+        alert.classList.add(type);
+
+        switch (type) {
+            case "connect":
+                alert.textContent = `${content.user}님이 입장하셨습니다.`;
+                break; 
+            case "disconnect":
+                alert.textContent = `${content.user}님이 퇴장하셨습니다.`;
+                break; 
+        }
+
+        chatDiv.appendChild(alert);
+    }
+
+    function chatting(user) {
+        const span = document.createElement("span");
+        span.textContent = `${user}님이 채팅중`;
+        chattingDiv.appendChild(span);
+    }
+
+    chatting("TEST1");
 
 </script>
 </html>
