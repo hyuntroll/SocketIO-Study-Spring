@@ -36,7 +36,7 @@
             background-color: rgb(159, 159, 159);
 
             overflow: hidden;
-            overflow-y: sc;
+            overflow-y: scroll;
         }
 
         .chmessage {
@@ -61,8 +61,8 @@
 </head>
 <body>
     <div class="status disconnected"></div>
-    <button>socket 연결</button>
-    <button>socket 연결해제</button>
+    <button onclick="socketConnect()">socket 연결</button>
+    <button onclick="socketDisConnect()">socket 연결해제</button>
     <span>닉네임: </span><input type="text" value="ㅇㅇ" id="name" placeholder="이름을 입력해주세요.">
     <span>sessionId: </span><span class="sessionId">undefined</span>
 
@@ -86,26 +86,40 @@
     const submitButton = document.getElementById("submit");
     const nameInput = document.getElementById("name");
 
-    const socket = io('localhost:8081', {
-        path: '/socket.io'
-    });
+    let socket;
 
-    socket.on("connect", () => {
-        status.classList.add("connected");
-        status.classList.remove("disconnected");
-        sessionId.textContent = socket.id;
-        
-    });
+    function socketConnect() { 
+        if (!socket || socket.disconnected){
 
-    socket.on("disconnect", () => {
-        status.classList.remove("connected");
-        status.classList.add("disconnected");
-    })
+            // SocketIO init 
+            socket = io("http://localhost:8081");
+            socket.on("connect", () => {
+                status.classList.add("connected");
+                status.classList.remove("disconnected");
+                sessionId.textContent = socket.id;
+                
+            });
 
-    socket.on("message", ({user,message}) => {
-        buildChatting(user, message, false);
-    });
+            socket.on("disconnect", () => {
+                status.classList.remove("connected");
+                status.classList.add("disconnected");
+            })
 
+            socket.on("message", ({user,message}) => {
+                buildChatting(user, message, false);
+            });
+                }
+            }
+
+    function socketDisConnect() { 
+        if (!socket || socket.connected)
+            socket.disconnect(); 
+    }
+
+    socketConnect();
+    
+
+   
 
     function buildChatting(user, message, is_mine) {
         
