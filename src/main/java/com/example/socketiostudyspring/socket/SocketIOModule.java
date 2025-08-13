@@ -48,7 +48,16 @@ public class SocketIOModule {
 
     public DataListener<Message> chatReceiver() {
         return (client, data, ackSender) -> {
-            log.info("chat recieved: " + data.getMessage());
+            log.info("chat received: " + data.getMessage());
+
+            server.getAllClients().forEach(c -> {
+                if (!client.getSessionId().equals(c.getSessionId()))
+                {
+//                    System.out.println(c.getSessionId() + ": " + data.getMessage());
+                    c.sendEvent("message", data);
+                }
+            });
+
         };
     }
 
