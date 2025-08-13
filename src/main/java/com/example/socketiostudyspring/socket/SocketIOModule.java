@@ -3,7 +3,9 @@ package com.example.socketiostudyspring.socket;
 
 import com.corundumstudio.socketio.SocketIOServer;
 import com.corundumstudio.socketio.listener.ConnectListener;
+import com.corundumstudio.socketio.listener.DataListener;
 import com.corundumstudio.socketio.listener.DisconnectListener;
+import com.example.socketiostudyspring.model.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +22,7 @@ public class SocketIOModule {
         this.server = server;
         server.addConnectListener(listenConnected());
         server.addDisconnectListener(listenDisconnected());
+        server.addEventListener("message", Message.class, chatReceiver());
     }
 
     /**
@@ -40,6 +43,12 @@ public class SocketIOModule {
             String sessionId = client.getSessionId().toString();
             log.info("disconnect: " + sessionId);
             client.disconnect();
+        };
+    }
+
+    public DataListener<Message> chatReceiver() {
+        return (client, data, ackSender) -> {
+            log.info("chat recieved: " + data.getMessage());
         };
     }
 
