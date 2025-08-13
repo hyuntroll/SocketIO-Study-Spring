@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
+    <title>Document</title>
+
+    <style> 
+
+        body {
+            margin: 0;
+        }
+
+        .status {
+            margin: 0 auto;
+            width: 100px;
+            height: 25px;
+            background-color: gray;
+        }
+
+        .status.disconnected {
+            background-color: red;
+        }
+        
+        .status.connected {
+            background-color: greenyellow;
+        }
+
+        .chat {
+
+            width: 100%;
+            height: 500px;
+            max-width: 1000px;
+
+            background-color: rgb(159, 159, 159);
+
+            overflow: hidden;
+            overflow-y: sc;
+        }
+
+        .chmessage {
+            background-color: rgb(104, 104, 104);
+            margin-bottom: 5px;
+        }
+
+        .chmessage.mine {
+            background-color: rgb(255, 223, 81);
+        }
+
+        .chat-input {
+            width: 100%;
+            height: 30px;
+            max-width: 1000px;
+        }
+    </style>
+</head>
+<body>
+    <div class="status disconnected"></div>
+    <button>socket 연결</button>
+    <button>socket 연결해제</button>
+    <span>sessionId: </span><span class="sessionId">undefined</span>
+
+    <div class="chat">
+        <div class="chmessage mine">
+            <p class="user">TEST1</p>
+            <span class="message">이건 좀 아닌듯;</span>
+        </div>
+
+    </div>
+    <input type="text" class="chat-input" value="채팅을 입력해주세요...">
+    <input type="button" value="전송">
+</body>
+
+
+<script>
+    const chatDiv = document.querySelector(".chat");
+    const status = document.querySelector(".status");
+    const sessionId = document.querySelector(".sessionId");
+
+    const socket = io('localhost:8081', {
+        path: '/socket.io'
+    });
+
+    socket.on("connect", () => {
+        status.classList.add("connected");
+        status.classList.remove("disconnected");
+        sessionId.textContent = socket.id;
+        
+    });
+
+    socket.on("disconnect", () => {
+        status.classList.remove("connected");
+        status.classList.add("disconnected");
+    })
+
+
+    function buildChatting(user, message, is_mine) {
+        
+        const chmessage = document.createElement("div");
+        chmessage.classList.add("chmessage");
+        if (is_mine) {
+            chmessage.classList.add("mine");
+        }
+
+        const userDiv = document.createElement("div");
+        userDiv.classList.add("user");
+        userDiv.textContent = user;
+
+        const messageDiv = document.createElement("span");
+        messageDiv.classList.add("message");
+        messageDiv.textContent = message;
+
+        chmessage.append(userDiv, messageDiv);
+        chatDiv.appendChild(chmessage);
+        
+    }
+
+
+</script>
+</html>
