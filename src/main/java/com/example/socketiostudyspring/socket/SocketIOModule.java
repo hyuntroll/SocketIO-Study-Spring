@@ -8,6 +8,7 @@ import com.corundumstudio.socketio.listener.DisconnectListener;
 import com.example.socketiostudyspring.model.Message;
 import com.example.socketiostudyspring.model.Typing;
 import com.example.socketiostudyspring.model.UserStatus;
+import com.example.socketiostudyspring.service.TypingStatusService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -19,9 +20,11 @@ import java.util.Map;
 public class SocketIOModule {
 
     private final SocketIOServer server;
+    private final TypingStatusService typingStatusService;
 
-    public SocketIOModule(SocketIOServer server) {
+    public SocketIOModule(SocketIOServer server, TypingStatusService typingStatusService) {
         this.server = server;
+        this.typingStatusService = typingStatusService;
         server.addConnectListener(listenConnected());
         server.addDisconnectListener(listenDisconnected());
         server.addEventListener("message", Message.class, chatReceiver());

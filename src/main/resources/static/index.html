@@ -182,6 +182,8 @@
 
         if (event instanceof KeyboardEvent && !(event.key === "Enter")) { 
             console.log(event.key);
+            
+            socket.emit("keyPressing", event.key);
 
             return ;
         }
