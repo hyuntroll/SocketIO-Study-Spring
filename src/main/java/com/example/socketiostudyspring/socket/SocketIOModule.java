@@ -91,8 +91,19 @@ public class SocketIOModule {
 
     public DataListener<Typing> receiveTyping() {
         return (client, data, ackSender) -> {
+            if (typingStatusService.isTyping(client.getSessionId().toString())) {
 
+                server.getAllClients().forEach(c -> {
 
+                    if (!client.getSessionId().equals(c.getSessionId()))
+                    {
+                        c.sendEvent("typing", data);
+                    }
+
+                });
+            }
+
+            typingStatusService.updateTying(client.getSessionId().toString());
         };
     }
 

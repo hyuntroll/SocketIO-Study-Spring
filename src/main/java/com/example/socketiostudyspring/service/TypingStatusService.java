@@ -21,8 +21,13 @@ public class TypingStatusService {
         typingMap.put(userId, System.currentTimeMillis());
     }
 
+    public boolean isTyping(String userId) {
+        return typingMap.containsKey(userId);
+    }
+
     @Scheduled(fixedRate = 1000)
     public void updateTypingStatus() {
+        System.out.println("테스트1");
         long now = System.currentTimeMillis();
         typingMap.forEach((userId, type) -> {
             if (now - typingMap.get(userId) > 4000) {
@@ -32,7 +37,7 @@ public class TypingStatusService {
 
                 server.getAllClients().forEach(client -> {
                     if (!client.getSessionId().equals(client.getSessionId())) {
-                        client.sendEvent("user-typing", data);
+                        client.sendEvent("typing", data);
                     }
                 });
             }

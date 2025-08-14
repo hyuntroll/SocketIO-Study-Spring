@@ -183,7 +183,7 @@
         if (event instanceof KeyboardEvent && !(event.key === "Enter")) { 
             console.log(event.key);
             
-            socket.emit("keyPressing", event.key);
+            socket.emit("typing", {userId: socket.id, typing:true});
 
             return ;
         }
