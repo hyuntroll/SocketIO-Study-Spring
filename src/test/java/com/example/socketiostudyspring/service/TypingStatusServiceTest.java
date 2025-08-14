@@ -21,6 +21,13 @@ class TypingStatusServiceTest {
         else {
             System.out.println("없음");
         }
+
+        service.removeTyping("abc-abc-abc");
+    }
+
+    @Test
+    public void typingExpire() throws InterruptedException {
+//        service.updateTypingStatus()
     }
 
 }

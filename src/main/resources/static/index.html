@@ -144,6 +144,15 @@
                 alertMessage(connectStatus, {user: userId});
             });
 
+            socket.on("typing", ({userId, typing}) => {
+                if (typing == true) {
+                    chatting(userId);
+                }
+                else {
+                    deleteIschat(userId);
+                }
+            });
+
             }
         }
 
@@ -223,10 +232,19 @@
     function chatting(user) {
         const span = document.createElement("span");
         span.textContent = `${user}님이 채팅중`;
+        span.id = user;
         chattingDiv.appendChild(span);
     }
 
-    chatting("TEST1");
+    function deleteIschat(user) {
+        const span = document.getElementById(user);
+
+        if (span) {
+            span.remove();
+        }
+    }
+
+    // chatting("TEST1");
 
 </script>
 </html>

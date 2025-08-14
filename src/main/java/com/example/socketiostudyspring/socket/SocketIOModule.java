@@ -78,6 +78,8 @@ public class SocketIOModule {
         return (client, data, ackSender) -> {
             log.info("chat received: " + data.getMessage());
 
+            typingStatusService.removeTyping(client.getSessionId().toString());
+
             server.getAllClients().forEach(c -> {
                 if (!client.getSessionId().equals(c.getSessionId()))
                 {
@@ -91,7 +93,10 @@ public class SocketIOModule {
 
     public DataListener<Typing> receiveTyping() {
         return (client, data, ackSender) -> {
-            if (typingStatusService.isTyping(client.getSessionId().toString())) {
+            log.info("typing session: " + client.getSessionId().toString());
+
+
+            if (!typingStatusService.isTyping(client.getSessionId().toString())) {
 
                 server.getAllClients().forEach(c -> {
 
@@ -102,7 +107,6 @@ public class SocketIOModule {
 
                 });
             }
-
             typingStatusService.updateTying(client.getSessionId().toString());
         };
     }
