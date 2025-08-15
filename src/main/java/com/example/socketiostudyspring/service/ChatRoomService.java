@@ -19,6 +19,10 @@ public class ChatRoomService {
         return this.roomMap.containsKey(roomId);
     }
 
+    public Room getRoom(String roomId) {
+        return isRoom(roomId) ? this.roomMap.get(roomId) : null;
+    }
+
     public boolean createRoom(String roomId, String password) {
         if (isRoom(roomId)) { return false; }
 
@@ -31,11 +35,13 @@ public class ChatRoomService {
     public boolean deleteRoom(String roomId, String password) {
         if (!isRoom(roomId)) { return false; }
 
-        Room room = this.roomMap.get(roomId);
+        Room room = getRoom(roomId);
         if (!room.getPassword().equals(password)) { return false;}
         this.roomMap.remove(roomId);
 
         return true;
     }
+
+
 
 }
