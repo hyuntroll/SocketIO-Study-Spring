@@ -17,7 +17,7 @@ public class Room {
     private String roomId;
     private String password;
     private int sessionCount;
-    private final Set<Session> sessionSet;
+    private final Set<String> sessionSet;
 
     public Room(String roomId, String password) {
         this.roomId = roomId;
