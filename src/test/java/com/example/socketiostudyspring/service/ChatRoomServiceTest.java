@@ -30,4 +30,25 @@ class ChatRoomServiceTest {
 
     }
 
+    @Test
+    public void joinRoom() {
+        System.out.println( service.createRoom("test1", "abcd" ));
+        System.out.println( service.joinRoom("test1", "abcd", "k1"));
+        System.out.println( service.joinRoom("test1", "abcd", "k1"));
+        System.out.println( service.joinRoom("test1", "abcd", "k2"));
+        System.out.println( service.joinRoom("test1", "abcd", "k3"));
+        System.out.println( service.getSessionCount("test1"));
+    }
+
+    @Test
+    public void leaveRoom() {
+        System.out.println( service.createRoom("test1", "abcd" ));
+        System.out.println( service.joinRoom("test1", "abcd", "k1"));
+        System.out.println( service.isRoom("test1"));
+
+        System.out.println( service.leaveRoom("test1", "abcd", "k1"));
+        System.out.println( service.isRoom("test1"));
+
+    }
+
 }
