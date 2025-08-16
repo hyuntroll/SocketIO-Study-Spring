@@ -24,8 +24,8 @@ class ChatRoomServiceTest {
     public void deleteRoom() {
         System.out.println( service.createRoom("test1", "abcd" ));
         System.out.println( service.isRoom("test1" ));
-        System.out.println( service.deleteRoom("test1", "123" ));
-        System.out.println( service.deleteRoom("test1", "abcd" ));
+        System.out.println( service.deleteRoom("test1"));
+        System.out.println( service.deleteRoom("test1"));
         System.out.println( service.isRoom("test1" ));
 
     }
