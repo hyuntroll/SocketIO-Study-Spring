@@ -12,17 +12,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 @ToString
+@NoArgsConstructor
+@AllArgsConstructor
 public class Room {
 
     private String roomId;
-    private String password;
-    private int sessionCount;
-    private final Set<String> sessionSet;
 
-    public Room(String roomId, String password) {
-        this.roomId = roomId;
-        this.password = password;
-        this.sessionCount = 0;
-        this.sessionSet = ConcurrentHashMap.newKeySet();
-    }
+    private String password;
+
 }
