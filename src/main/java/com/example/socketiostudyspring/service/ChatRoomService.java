@@ -41,8 +41,8 @@ public class ChatRoomService {
         return true;
     }
 
-    public boolean deleteRoom(String roomId, String password) {
-        if (!isRoom(roomId) || isCorrect(roomId, password)) { return false; }
+    public boolean deleteRoom(String roomId) {
+        if (!isRoom(roomId)) { return false; }
 
         log.info("room deleted: " + roomId);
         this.roomMap.remove(roomId);
@@ -67,6 +67,8 @@ public class ChatRoomService {
         Set<String> roomSession = room.getSessionSet();
         if (roomSession.contains(userId)) { return false; }
 
+        log.info("room join session: " + userId);
+
         roomSession.add(userId);
         room.setSessionCount(room.getSessionCount()+1);
         return true;
@@ -77,13 +79,17 @@ public class ChatRoomService {
 
         Room room = getRoom(roomId);
         Set<String> roomSession = room.getSessionSet();
-        if (roomSession.contains(userId)) { return false; }
+
+        if (!roomSession.contains(userId)) { return false; }
+
+        log.info("room leave session: " + userId);
+
 
         roomSession.remove(userId);
         room.setSessionCount(room.getSessionCount()-1);
 
         if (room.getSessionCount() <= 0 ) {
-            deleteRoom(roomId, password);
+            deleteRoom(roomId);
         }
 
         return true;
