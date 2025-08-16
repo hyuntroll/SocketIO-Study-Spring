@@ -74,8 +74,8 @@ public class ChatRoomService {
         return true;
     }
 
-    public boolean leaveRoom(String roomId, String password, String userId) {
-        if (!isRoom(roomId) || isCorrect(roomId, password)) { return false; }
+    public boolean leaveRoom(String roomId, String userId) {
+        if (!isRoom(roomId)) { return false; }
 
         Room room = getRoom(roomId);
         Set<String> roomSession = room.getSessionSet();

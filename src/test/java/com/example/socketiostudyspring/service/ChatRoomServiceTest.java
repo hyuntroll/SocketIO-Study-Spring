@@ -46,7 +46,7 @@ class ChatRoomServiceTest {
         System.out.println( service.joinRoom("test1", "abcd", "k1"));
         System.out.println( service.isRoom("test1"));
 
-        System.out.println( service.leaveRoom("test1", "abcd", "k1"));
+        System.out.println( service.leaveRoom("test1", "k1"));
         System.out.println( service.isRoom("test1"));
 
     }
