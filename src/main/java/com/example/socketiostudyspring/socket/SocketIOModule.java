@@ -76,7 +76,12 @@ public class SocketIOModule {
 
             });
 
-            client.getAllRooms().forEach(client::leaveRoom);
+
+            client.getAllRooms().forEach(c -> {
+                System.out.println(c);
+                client.leaveRoom(c);
+                chatRoomService.leaveRoom(c, sessionId);
+            });
 
             client.disconnect();
 
@@ -153,7 +158,7 @@ public class SocketIOModule {
                 return;
             }
 
-            if (chatRoomService.leaveRoom(data.getRoomId(), data.getPassword(), client.getSessionId().toString())) {
+            if (chatRoomService.leaveRoom(data.getRoomId(), client.getSessionId().toString())) {
                 client.leaveRoom(data.getRoomId());
             }
             else
