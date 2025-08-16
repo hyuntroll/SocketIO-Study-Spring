@@ -5,9 +5,8 @@ import com.corundumstudio.socketio.SocketIOServer;
 import com.corundumstudio.socketio.listener.ConnectListener;
 import com.corundumstudio.socketio.listener.DataListener;
 import com.corundumstudio.socketio.listener.DisconnectListener;
-import com.example.socketiostudyspring.model.Message;
-import com.example.socketiostudyspring.model.Typing;
-import com.example.socketiostudyspring.model.UserStatus;
+import com.example.socketiostudyspring.model.*;
+import com.example.socketiostudyspring.service.ChatRoomService;
 import com.example.socketiostudyspring.service.TypingStatusService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,14 +20,20 @@ public class SocketIOModule {
 
     private final SocketIOServer server;
     private final TypingStatusService typingStatusService;
+    private final ChatRoomService chatRoomService;
 
-    public SocketIOModule(SocketIOServer server, TypingStatusService typingStatusService) {
+    public SocketIOModule(SocketIOServer server, TypingStatusService typingStatusService, ChatRoomService chatRoomService) {
         this.server = server;
         this.typingStatusService = typingStatusService;
+        this.chatRoomService = chatRoomService;
+
         server.addConnectListener(listenConnected());
         server.addDisconnectListener(listenDisconnected());
+
         server.addEventListener("message", Message.class, chatReceiver());
         server.addEventListener("typing", Typing.class, receiveTyping());
+        server.addEventListener("join-room", RoomRequestDTO.class, joinRoom());
+        server.addEventListener("leave-room", RoomRequestDTO.class, leaveRoom());
     }
 
     /**
@@ -59,7 +64,6 @@ public class SocketIOModule {
         return client -> {
             String sessionId = client.getSessionId().toString();
             log.info("disconnect: " + sessionId);
-            client.disconnect();
 
             server.getAllClients().forEach( c -> {
                 if (!client.getSessionId().equals(c.getSessionId())) {
@@ -71,6 +75,11 @@ public class SocketIOModule {
                 }
 
             });
+
+            client.getAllRooms().forEach(client::leaveRoom);
+
+            client.disconnect();
+
         };
     }
 
@@ -78,13 +87,22 @@ public class SocketIOModule {
         return (client, data, ackSender) -> {
             log.info("chat received: " + data.getMessage());
 
+            String roomId = data.getRoomId(); //TODO: Optional 추가 필요
+
             typingStatusService.removeTyping(client.getSessionId().toString());
 
             server.getAllClients().forEach(c -> {
-                if (!client.getSessionId().equals(c.getSessionId()))
-                {
-//                    System.out.println(c.getSessionId() + ": " + data.getMessage());
-                    c.sendEvent("message", data);
+                if (!client.getSessionId().equals(c.getSessionId())) {
+                    if (roomId == null) {
+//                        System.out.println(c.getSessionId() + ": " + data.getMessage());
+                        c.sendEvent("message", data);
+                    }
+                    else {
+                        if (c.getAllRooms().contains(roomId) ) {
+                            c.sendEvent("room-message", data);
+                        }
+                    }
+
                 }
             });
 
@@ -111,5 +129,37 @@ public class SocketIOModule {
         };
     }
 
+    public DataListener<RoomRequestDTO> joinRoom() {
+        return (client, data, ackSender) -> {
+            if (client.getAllRooms().contains(data.getRoomId())) { return ; }
+
+            if (!chatRoomService.isRoom(data.getRoomId())) {
+                chatRoomService.createRoom(data.getRoomId(), data.getPassword());
+            }
+            if (chatRoomService.joinRoom(data.getRoomId(), data.getPassword(), client.getSessionId().toString())) {
+                client.joinRoom(data.getRoomId());
+            }
+            else
+                log.info("room join failed: "  + data.getRoomId());
+
+        };
+    }
+
+    public DataListener<RoomRequestDTO> leaveRoom() {
+        return (client, data, ackSender) -> {
+            if ( !client.getAllRooms().contains(data.getRoomId())) { return ;}
+
+            if (!chatRoomService.isRoom(data.getRoomId())) {
+                return;
+            }
+
+            if (chatRoomService.leaveRoom(data.getRoomId(), data.getPassword(), client.getSessionId().toString())) {
+                client.leaveRoom(data.getRoomId());
+            }
+            else
+                log.info("leave room failed: " + data.getRoomId());
+
+        };
+    }
 
 }
