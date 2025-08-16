@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
+    <title>Document</title>
+
+    
+    <style> 
+
+        body {
+            margin: 0;
+        }
+
+        .status {
+            margin: 0 auto;
+            width: 100px;
+            height: 25px;
+            background-color: gray;
+        }
+
+        .status.disconnected {
+            background-color: red;
+        }
+        
+        .status.connected {
+            background-color: greenyellow;
+        }
+
+        .chat {
+
+            width: 100%;
+            height: 500px;
+            max-width: 1000px;
+
+            background-color: rgb(159, 159, 159);
+
+            overflow: hidden;
+            overflow-y: scroll;
+        }
+
+        .chmessage {
+            background-color: rgb(195, 195, 195);
+            margin-bottom: 5px;
+        }
+
+        .chmessage.mine {
+            background-color: rgb(255, 223, 81);
+        }
+
+        .alert {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .alert.connect {
+            background-color: greenyellow;
+        }
+        .alert.disconnect {
+            background-color: red;
+        }
+
+        #chat-input {
+            width: 100%;
+            height: 30px;
+            max-width: 1000px;
+        }
+
+        input#name {
+            border:none;
+        }
+
+        .is-chatting {
+            height: 400px;
+            max-width: 1000px;
+            background-color: rgba(212, 212, 212, 0.8);
+        }
+
+        .is-chatting span {
+            display: block;
+        }
+    </style>
+
+    <!-- 1 : 1, 비밀번호 방 ( 예전에 만들었던 브롤스타즈 그거 느낌으로, 내용 저장) -->
+</head>
+<body>
+    <div class="status disconnected"></div>
+    <button onclick="socketConnect()">socket 연결</button>
+    <button onclick="socketDisConnect()">socket 연결해제</button>
+    <span>닉네임: </span><input type="text" value="ㅇㅇ" id="name" placeholder="이름을 입력해주세요.">
+    <span>sessionId: </span><span class="sessionId">undefined</span> <br>
+
+    <span>roomId: </span><input type="text" id="roomId">
+    <span>password: </span><input type="password" id="password">
+    <button onclick="joinRoom()">join</button>
+    <button onclick="leaveRoom()">leave</button>
+
+
+    <div class="chat">
+
+    </div>
+    <input type="text" id="chat-input" placeholder="채팅을 입력해주세요..." onkeypress="sendMessage(event)">
+    <input type="button" value="전송" id="submit" onclick="sendMessage(event)">
+
+    <div class="is-chatting">
+
+    </div>
+</body>
+
+
+<script>
+    const chatDiv = document.querySelector(".chat");
+    const status = document.querySelector(".status");
+    const sessionId = document.querySelector(".sessionId");
+    const chatInput = document.getElementById("chat-input");
+    const submitButton = document.getElementById("submit");
+    const nameInput = document.getElementById("name");
+    const chattingDiv = document.querySelector(".is-chatting");
+    const roomIdDiv = document.getElementById("roomId");
+    const passwordDiv = document.getElementById("password");
+
+    let socket;
+    let _room;
+    let _password;
+
+    function socketConnect() { 
+        if (!socket || socket.disconnected){
+
+            // SocketIO init 
+            socket = io("http://localhost:8081");
+            socket.on("connect", () => {
+                status.classList.add("connected");
+                status.classList.remove("disconnected");
+                sessionId.textContent = socket.id;
+                
+            });
+
+            socket.on("disconnect", () => {
+                status.classList.remove("connected");
+                status.classList.add("disconnected");
+                _room = null;
+                _password = null;
+            })
+
+            socket.on("room-message", ({user,message}) => {
+                buildChatting(user, message, false);
+            });
+
+            
+        }
+    }
+
+    function socketDisConnect() { 
+        if (!socket || socket.connected) {
+            socket.disconnect(); 
+            _room = null;
+            _password = null;
+        }
+    }
+
+    socketConnect();
+    
+
+   function joinRoom() {
+        if (!_room) {
+            let roomId = roomIdDiv.value;
+            let password = roomIdDiv.value;
+
+            socket.emit("join-room", {roomId: roomId, password: password});
+            _room = roomId;
+            _password = password;
+        }
+   }
+
+   function leaveRoom() {
+        if (_room) {
+            console.log(_password, _room)
+            socket.emit("leave-room", {roomId: _room, password: _password})
+            _room = null;
+            _password = null;
+        }
+   }
+
+    function buildChatting(user, message, is_mine) {
+        
+        const chmessage = document.createElement("div");
+        chmessage.classList.add("chmessage");
+        if (is_mine) {
+            chmessage.classList.add("mine");
+        }
+
+        const userDiv = document.createElement("p");
+        userDiv.classList.add("user");
+        userDiv.textContent = user;
+
+        const messageDiv = document.createElement("span");
+        messageDiv.classList.add("message");
+        messageDiv.textContent = message;
+
+        chmessage.append(userDiv, messageDiv);
+        chatDiv.appendChild(chmessage);
+        
+    }
+
+    function sendMessage(event) {
+
+        if (event instanceof KeyboardEvent && !(event.key === "Enter")) { 
+            return ;
+        }
+
+        let name = nameInput.value;
+        if (!chatInput.value || !nameInput.value || !_room) { return ; }
+
+        socket.emit("message", 
+            {
+                message: chatInput.value, 
+                user: nameInput.value,
+                roomId: _room
+            }
+        );
+        
+        buildChatting(nameInput.value, chatInput.value , true);
+        chatInput.value = '';
+        
+    };
+
+    function alertMessage(type, content) {
+        const alert = document.createElement("div");
+        alert.classList.add("alert");
+        alert.classList.add(type);
+
+        switch (type) {
+            case "connect":
+                alert.textContent = `${content.user}님이 입장하셨습니다.`;
+                break; 
+            case "disconnect":
+                alert.textContent = `${content.user}님이 퇴장하셨습니다.`;
+                break; 
+        }
+
+        chatDiv.appendChild(alert);
+    }
+
+    function chatting(user) {
+        const span = document.createElement("span");
+        span.textContent = `${user}님이 채팅중`;
+        span.id = user;
+        chattingDiv.appendChild(span);
+    }
+
+    function deleteIschat(user) {
+        const span = document.getElementById(user);
+
+        if (span) {
+            span.remove();
+        }
+    }
+
+    // chatting("TEST1");
+
+</script>
+</html>
