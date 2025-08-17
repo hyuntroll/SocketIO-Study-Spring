@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -31,12 +32,23 @@ public class ChatRoomService {
         return !getRoom(roomId).getPassword().equals(password);
     }
 
+    public Set<String> getRoomsByUser(String userId) {
+        Set<String> rooms = new HashSet<>();
+        roomMap.forEach((roomId, room) -> {
+//            log.info("roomId:{} room:{}", roomId, room);
+            if (room.getSessionSet().contains(userId)) {
+                rooms.add(roomId);
+            }
+        });
+        return rooms;
+    }
+
     public boolean createRoom(String roomId, String password) {
         if (isRoom(roomId)) { return false; }
 
         log.info("room created: " + roomId);
         Room room = new Room(roomId, password);
-        this.roomMap.put(roomId, room);
+        roomMap.put(roomId, room);
 
         return true;
     }
