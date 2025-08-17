@@ -90,6 +90,7 @@
     <button onclick="socketDisConnect()">socket 연결해제</button>
     <span>닉네임: </span><input type="text" value="ㅇㅇ" id="name" placeholder="이름을 입력해주세요.">
     <span>sessionId: </span><span class="sessionId">undefined</span> <br>
+    <div class="current_room"></div>
 
     <span>roomId: </span><input type="text" id="roomId">
     <span>password: </span><input type="password" id="password">
@@ -119,10 +120,10 @@
     const chattingDiv = document.querySelector(".is-chatting");
     const roomIdDiv = document.getElementById("roomId");
     const passwordDiv = document.getElementById("password");
+    const currentRoom  = document.querySelector(".current_room");
 
     let socket;
     let _room;
-    let _password;
 
     function socketConnect() { 
         if (!socket || socket.disconnected){
@@ -140,7 +141,7 @@
                 status.classList.remove("connected");
                 status.classList.add("disconnected");
                 _room = null;
-                _password = null;
+
             })
 
             socket.on("room-message", ({user,message}) => {
@@ -155,7 +156,7 @@
         if (!socket || socket.connected) {
             socket.disconnect(); 
             _room = null;
-            _password = null;
+
         }
     }
 
@@ -165,20 +166,32 @@
    function joinRoom() {
         if (!_room) {
             let roomId = roomIdDiv.value;
-            let password = roomIdDiv.value;
+            let password = passwordDiv.value;
 
-            socket.emit("join-room", {roomId: roomId, password: password});
-            _room = roomId;
-            _password = password;
+            socket.emit("join-room", {roomId: roomId, password: password}, (response) => {
+                if (response == "ok") {
+                    _room = roomId;
+                    currentRoom.textContent = _room;
+                }
+                else if(response == "failed") {
+                    currentRoom.textContent = "입장에 실패했습니다."
+                }
+            });
+            
         }
    }
 
    function leaveRoom() {
         if (_room) {
-            console.log(_password, _room)
-            socket.emit("leave-room", {roomId: _room, password: _password})
-            _room = null;
-            _password = null;
+            // console.log(_room)
+            socket.emit("leave-room", {roomId: _room}, (response) => {
+                if (response == "ok") {
+                    _room = null;
+                    currentRoom.textContent = undefined;
+                }
+
+            });
+            
         }
    }
 

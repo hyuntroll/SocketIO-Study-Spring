@@ -145,11 +145,15 @@ public class SocketIOModule {
             if (!chatRoomService.isRoom(data.getRoomId())) {
                 chatRoomService.createRoom(data.getRoomId(), data.getPassword());
             }
+//            log.info("{}, {}", data.getRoomId(), data.getPassword());
             if (chatRoomService.joinRoom(data.getRoomId(), data.getPassword(), client.getSessionId().toString())) {
                 client.joinRoom(data.getRoomId());
+                if (ackSender.isAckRequested()) { ackSender.sendAckData("ok"); }
             }
             else
                 log.info("room join failed: {}", data.getRoomId());
+            if (ackSender.isAckRequested()) { ackSender.sendAckData("failed"); }
+
 
         };
     }
@@ -164,10 +168,14 @@ public class SocketIOModule {
 
             if (chatRoomService.leaveRoom(data.getRoomId(), client.getSessionId().toString())) {
                 client.leaveRoom(data.getRoomId());
+                if (ackSender.isAckRequested()) { ackSender.sendAckData("ok"); }
             }
-            else
+            else {
                 log.info("leave room failed: {}", data.getRoomId());
-
+                if (ackSender.isAckRequested()) {
+                    ackSender.sendAckData("failed");
+                }
+            }
         };
     }
 
