@@ -45,6 +45,9 @@
         }
 
         .chmessage.mine {
+            background-color: rgb(219, 216, 202);
+        }
+        .chmessage.mine.send {
             background-color: rgb(255, 223, 81);
         }
 
@@ -184,7 +187,13 @@
 
         chmessage.append(userDiv, messageDiv);
         chatDiv.appendChild(chmessage);
+
+        return chmessage
         
+    }
+
+    function chattingOk(chat) {
+        chat.classList.add("send");
     }
 
     function sendMessage(event) {
@@ -200,14 +209,19 @@
         let name = nameInput.value;
         if (!chatInput.value || !nameInput.value) { return ; }
 
+        let chat = buildChatting(nameInput.value, chatInput.value , true);
         socket.emit("message", 
             {
                 message: chatInput.value, 
                 user: nameInput.value
             }
-        );
+        , (response) => {
+            console.log(response);
+            if (response === "ok")
+                chattingOk(chat);
+        });
         
-        buildChatting(nameInput.value, chatInput.value , true);
+        
         chatInput.value = '';
         
     };

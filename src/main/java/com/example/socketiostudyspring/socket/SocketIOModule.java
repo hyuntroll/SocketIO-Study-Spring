@@ -42,7 +42,7 @@ public class SocketIOModule {
     public ConnectListener listenConnected() {
         return (client) -> {
             Map<String, List<String>> params = client.getHandshakeData().getUrlParams();
-            log.info("connect:" + params.toString() + client.getSessionId().toString());
+            log.info("connect: {} {}", params.toString(), client.getSessionId().toString());
 
             server.getAllClients().forEach( c -> {
                 if (!client.getSessionId().equals(c.getSessionId())) {
@@ -63,7 +63,6 @@ public class SocketIOModule {
     public DisconnectListener listenDisconnected() {
         return client -> {
             String sessionId = client.getSessionId().toString();
-
             chatRoomService.getRoomsByUser(sessionId).forEach(c -> {
 //                System.out.println(c);
 //                System.out.println(sessionId + client.getCurrentRoomSize(c));
@@ -71,7 +70,7 @@ public class SocketIOModule {
                 chatRoomService.leaveRoom(c, sessionId);
             });
 
-            log.info("disconnect: " + sessionId);
+            log.info("disconnect: {}", sessionId);
 
             server.getAllClients().forEach( c -> {
                 if (!client.getSessionId().equals(c.getSessionId())) {
@@ -91,7 +90,7 @@ public class SocketIOModule {
 
     public DataListener<Message> chatReceiver() {
         return (client, data, ackSender) -> {
-            log.info("chat received: " + data.getMessage());
+            log.info("chat received: {}", data.getMessage());
 
             String roomId = data.getRoomId(); //TODO: Optional 추가 필요
 
@@ -112,12 +111,16 @@ public class SocketIOModule {
                 }
             });
 
+            if ( ackSender.isAckRequested() ) { // 클라이언트에서 AckRequest요청을 한다면
+                ackSender.sendAckData("ok");
+            }
+
         };
     }
 
     public DataListener<Typing> receiveTyping() {
         return (client, data, ackSender) -> {
-            log.info("typing session: " + client.getSessionId().toString());
+            log.info("typing session: {}", client.getSessionId().toString());
 
 
             if (!typingStatusService.isTyping(client.getSessionId().toString())) {
@@ -146,7 +149,7 @@ public class SocketIOModule {
                 client.joinRoom(data.getRoomId());
             }
             else
-                log.info("room join failed: "  + data.getRoomId());
+                log.info("room join failed: {}", data.getRoomId());
 
         };
     }
@@ -163,7 +166,7 @@ public class SocketIOModule {
                 client.leaveRoom(data.getRoomId());
             }
             else
-                log.info("leave room failed: " + data.getRoomId());
+                log.info("leave room failed: {}", data.getRoomId());
 
         };
     }

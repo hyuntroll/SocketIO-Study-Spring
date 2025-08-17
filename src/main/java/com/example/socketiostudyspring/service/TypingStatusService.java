@@ -35,7 +35,6 @@ public class TypingStatusService {
             Typing data = new Typing(userId,false);
 
             server.getAllClients().forEach(client -> {
-                System.out.println("test1");
                 client.sendEvent("typing", data);
             });
         }
