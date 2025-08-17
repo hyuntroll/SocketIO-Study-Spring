@@ -63,6 +63,14 @@ public class SocketIOModule {
     public DisconnectListener listenDisconnected() {
         return client -> {
             String sessionId = client.getSessionId().toString();
+
+            chatRoomService.getRoomsByUser(sessionId).forEach(c -> {
+//                System.out.println(c);
+//                System.out.println(sessionId + client.getCurrentRoomSize(c));
+                client.leaveRoom(c);
+                chatRoomService.leaveRoom(c, sessionId);
+            });
+
             log.info("disconnect: " + sessionId);
 
             server.getAllClients().forEach( c -> {
@@ -74,13 +82,6 @@ public class SocketIOModule {
                     c.sendEvent("user_status", userStatus);
                 }
 
-            });
-
-
-            client.getAllRooms().forEach(c -> {
-                System.out.println(c);
-                client.leaveRoom(c);
-                chatRoomService.leaveRoom(c, sessionId);
             });
 
             client.disconnect();
