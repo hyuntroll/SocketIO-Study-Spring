@@ -126,7 +126,7 @@
         if (!socket || socket.disconnected){
 
             // SocketIO init 
-            socket = io("http://localhost:8081");
+            socket = io("http://10.80.161.149:8081");
             socket.on("connect", () => {
                 status.classList.add("connected");
                 status.classList.remove("disconnected");
