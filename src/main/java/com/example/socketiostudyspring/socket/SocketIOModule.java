@@ -26,12 +26,10 @@ public class SocketIOModule {
         this.server = server;
         this.typingStatusService = typingStatusService;
         this.chatRoomService = chatRoomService;
-
         server.addConnectListener(listenConnected());
         server.addDisconnectListener(listenDisconnected());
 
         server.addEventListener("message", Message.class, chatReceiver());
-        server.addEventListener("typing", Typing.class, receiveTyping());
         server.addEventListener("join-room", RoomRequestDTO.class, joinRoom());
         server.addEventListener("leave-room", RoomRequestDTO.class, leaveRoom());
     }
