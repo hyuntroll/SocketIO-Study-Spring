@@ -8,6 +8,7 @@ import com.corundumstudio.socketio.listener.DisconnectListener;
 import com.example.socketiostudyspring.model.*;
 import com.example.socketiostudyspring.service.ChatRoomService;
 import com.example.socketiostudyspring.service.TypingStatusService;
+import com.example.socketiostudyspring.service.UserStatusService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -21,68 +22,49 @@ public class SocketIOModule {
     private final SocketIOServer server;
     private final TypingStatusService typingStatusService;
     private final ChatRoomService chatRoomService;
+    private final UserStatusService userStatusService;
 
-    public SocketIOModule(SocketIOServer server, TypingStatusService typingStatusService, ChatRoomService chatRoomService) {
+    public SocketIOModule(SocketIOServer server, TypingStatusService typingStatusService, ChatRoomService chatRoomService, UserStatusService userStatusService) {
         this.server = server;
         this.typingStatusService = typingStatusService;
         this.chatRoomService = chatRoomService;
-        server.addConnectListener(listenConnected());
-        server.addDisconnectListener(listenDisconnected());
+        this.userStatusService = userStatusService;
 
+        // add Handler
+        // namespace - "/"
+        server.addConnectListener(listenConnected("/"));
+        server.addDisconnectListener(listenDisconnected("/"));
+
+        server.addEventListener("typing", Typing.class, receiveTyping());
         server.addEventListener("message", Message.class, chatReceiver());
         server.addEventListener("join-room", RoomRequestDTO.class, joinRoom());
         server.addEventListener("leave-room", RoomRequestDTO.class, leaveRoom());
+
+        // namespace - "/room"
+        server.addNamespace("/room").addConnectListener(listenConnected("/room"));
+        server.addNamespace("/room").addDisconnectListener(listenDisconnected("/room"));
+
+        server.addNamespace("/room").addDisconnectListener(listenDisconnectedRooms());
     }
 
     /**
      * 클라이언트 연결 리스너
      */
-    public ConnectListener listenConnected() {
-        return (client) -> {
-            Map<String, List<String>> params = client.getHandshakeData().getUrlParams();
-            log.info("connect: {} {}", params.toString(), client.getSessionId().toString());
-
-            server.getAllClients().forEach( c -> {
-                if (!client.getSessionId().equals(c.getSessionId())) {
-                    UserStatus userStatus = UserStatus.builder()
-                            .userId(client.getSessionId().toString())
-                            .connectStatus("connect")
-                            .build();
-                    c.sendEvent("user_status", userStatus);
-                }
-
-            });
-        };
+    public ConnectListener listenConnected(String namespace) {
+        return client -> userStatusService.notifyConnection(client, server, namespace);
     }
 
     /**
      * 클라이언트 연결 해제 리스너
      */
-    public DisconnectListener listenDisconnected() {
+    public DisconnectListener listenDisconnected(String namespace) {
+        return client -> userStatusService.notifyDisconnection(client, server, namespace);
+    }
+
+    public DisconnectListener listenDisconnectedFromRoom() {
         return client -> {
-            String sessionId = client.getSessionId().toString();
-            chatRoomService.getRoomsByUser(sessionId).forEach(c -> {
-//                System.out.println(c);
-//                System.out.println(sessionId + client.getCurrentRoomSize(c));
-                client.leaveRoom(c);
-                chatRoomService.leaveRoom(c, sessionId);
-            });
-
-            log.info("disconnect: {}", sessionId);
-
-            server.getAllClients().forEach( c -> {
-                if (!client.getSessionId().equals(c.getSessionId())) {
-                    UserStatus userStatus = UserStatus.builder()
-                            .userId(client.getSessionId().toString())
-                            .connectStatus("disconnect")
-                            .build();
-                    c.sendEvent("user_status", userStatus);
-                }
-
-            });
-
-            client.disconnect();
-
+          userStatusService.notifyDisconnection(client, server, "/room");
+          chatRoomService.handleDisconnectFromRooms(client.getSessionId().toString());
         };
     }
 

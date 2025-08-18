@@ -5,10 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -17,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChatRoomService {
 
     private final Map<String, Room> roomMap = new ConcurrentHashMap<>();
+    private final Map<String, List<Room>> userList = new ConcurrentHashMap<>(); // 유저가 어느 채팅방에 있는지 확인하기 위함 hashMap
 
     public boolean isRoom(String roomId) {
         return this.roomMap.containsKey(roomId);
@@ -105,6 +103,14 @@ public class ChatRoomService {
         }
 
         return true;
+    }
+
+    public void handleDisconnectFromRooms(String userId) {
+        Set<String> roomIds = getRoomsByUser(userId);
+        for (String roomId : roomIds) {
+            leaveRoom(roomId, userId);
+        }
+
     }
 
 }
