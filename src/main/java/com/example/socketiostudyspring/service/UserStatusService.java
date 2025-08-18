@@ -4,6 +4,7 @@ package com.example.socketiostudyspring.service;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.example.socketiostudyspring.model.UserStatus;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -12,9 +13,12 @@ import java.util.Map;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UserStatusService {
 
-    public void notifyConnection(SocketIOClient client, SocketIOServer server, String namespace) {
+    private final SocketIOServer server;
+
+    public void notifyConnection(SocketIOClient client, String namespace) {
         Map<String, List<String>> params = client.getHandshakeData().getUrlParams();
         log.info("connect: {} {}", params.toString(), client.getSessionId().toString());
 
@@ -30,7 +34,7 @@ public class UserStatusService {
         });
     }
 
-    public void notifyDisconnection(SocketIOClient client, SocketIOServer server, String namespace) {
+    public void notifyDisconnection(SocketIOClient client, String namespace) {
         String sessionId = client.getSessionId().toString();
         log.info("disconnect: {}", sessionId);
 
@@ -38,7 +42,7 @@ public class UserStatusService {
                 .userId(client.getSessionId().toString())
                 .connectStatus("disconnect")
                 .build();
-        server.getAllClients().forEach( c -> {
+        server.addNamespace(namespace).getAllClients().forEach( c -> {
             if (!client.getSessionId().equals(c.getSessionId())) {
                 c.sendEvent("user_status", userStatus);
             }

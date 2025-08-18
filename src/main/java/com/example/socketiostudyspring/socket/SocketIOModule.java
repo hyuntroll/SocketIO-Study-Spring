@@ -7,8 +7,10 @@ import com.corundumstudio.socketio.listener.DataListener;
 import com.corundumstudio.socketio.listener.DisconnectListener;
 import com.example.socketiostudyspring.model.*;
 import com.example.socketiostudyspring.service.ChatRoomService;
+import com.example.socketiostudyspring.service.ChatService;
 import com.example.socketiostudyspring.service.TypingStatusService;
 import com.example.socketiostudyspring.service.UserStatusService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -23,49 +25,55 @@ public class SocketIOModule {
     private final TypingStatusService typingStatusService;
     private final ChatRoomService chatRoomService;
     private final UserStatusService userStatusService;
+    private final ChatService chatService;
 
-    public SocketIOModule(SocketIOServer server, TypingStatusService typingStatusService, ChatRoomService chatRoomService, UserStatusService userStatusService) {
+    public SocketIOModule(SocketIOServer server, TypingStatusService typingStatusService, ChatRoomService chatRoomService, UserStatusService userStatusService, ChatService chatService) {
         this.server = server;
         this.typingStatusService = typingStatusService;
         this.chatRoomService = chatRoomService;
         this.userStatusService = userStatusService;
+        this.chatService = chatService;
 
         // add Handler
         // namespace - "/"
         server.addConnectListener(listenConnected("/"));
         server.addDisconnectListener(listenDisconnected("/"));
+        server.addEventListener("message", Message.class, testChat());
 
-        server.addEventListener("typing", Typing.class, receiveTyping());
-        server.addEventListener("message", Message.class, chatReceiver());
-        server.addEventListener("join-room", RoomRequestDTO.class, joinRoom());
-        server.addEventListener("leave-room", RoomRequestDTO.class, leaveRoom());
+//        server.addEventListener("typing", Typing.class, receiveTyping());
+//        server.addEventListener("message", Message.class, chatReceiver());
+//        server.addEventListener("join-room", RoomRequestDTO.class, joinRoom());
+//        server.addEventListener("leave-room", RoomRequestDTO.class, leaveRoom());
 
         // namespace - "/room"
         server.addNamespace("/room").addConnectListener(listenConnected("/room"));
-        server.addNamespace("/room").addDisconnectListener(listenDisconnected("/room"));
+        server.addNamespace("/room").addDisconnectListener(listenDisconnectedFromRoom());
 
-        server.addNamespace("/room").addDisconnectListener(listenDisconnectedRooms());
     }
 
     /**
      * 클라이언트 연결 리스너
      */
     public ConnectListener listenConnected(String namespace) {
-        return client -> userStatusService.notifyConnection(client, server, namespace);
+        return client -> userStatusService.notifyConnection(client, namespace);
     }
 
     /**
      * 클라이언트 연결 해제 리스너
      */
     public DisconnectListener listenDisconnected(String namespace) {
-        return client -> userStatusService.notifyDisconnection(client, server, namespace);
+        return client -> userStatusService.notifyDisconnection(client, namespace);
     }
 
     public DisconnectListener listenDisconnectedFromRoom() {
         return client -> {
-          userStatusService.notifyDisconnection(client, server, "/room");
+          userStatusService.notifyDisconnection(client, "/room");
           chatRoomService.handleDisconnectFromRooms(client.getSessionId().toString());
         };
+    }
+
+    public DataListener<Message> testChat() {
+        return chatService::chatHandler;
     }
 
     public DataListener<Message> chatReceiver() {
