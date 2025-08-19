@@ -38,16 +38,19 @@ public class SocketIOModule {
         // namespace - "/"
         server.addConnectListener(listenConnected("/"));
         server.addDisconnectListener(listenDisconnected("/"));
-        server.addEventListener("message", Message.class, testChat());
+        server.addEventListener("message", Message.class, chatReceiver());
 
 //        server.addEventListener("typing", Typing.class, receiveTyping());
 //        server.addEventListener("message", Message.class, chatReceiver());
-//        server.addEventListener("join-room", RoomRequestDTO.class, joinRoom());
 //        server.addEventListener("leave-room", RoomRequestDTO.class, leaveRoom());
 
         // namespace - "/room"
         server.addNamespace("/room").addConnectListener(listenConnected("/room"));
         server.addNamespace("/room").addDisconnectListener(listenDisconnectedFromRoom());
+        server.addNamespace("/room").addEventListener("message", Message.class, chatReceiverFromRoom());
+        server.addNamespace("/room").addEventListener("join-room", RoomRequestDTO.class, joinRoom());
+        server.addNamespace("/room").addEventListener("leave-room", RoomRequestDTO.class, leaveRoom());
+
 
     }
 
@@ -72,38 +75,13 @@ public class SocketIOModule {
         };
     }
 
-    public DataListener<Message> testChat() {
+
+    public DataListener<Message> chatReceiver() {
         return chatService::chatHandler;
     }
 
-    public DataListener<Message> chatReceiver() {
-        return (client, data, ackSender) -> {
-            log.info("chat received: {}", data.getMessage());
-
-            String roomId = data.getRoomId(); //TODO: Optional 추가 필요
-
-            typingStatusService.removeTyping(client.getSessionId().toString());
-
-            server.getAllClients().forEach(c -> {
-                if (!client.getSessionId().equals(c.getSessionId())) {
-                    if (roomId == null) {
-//                        System.out.println(c.getSessionId() + ": " + data.getMessage());
-                        c.sendEvent("message", data);
-                    }
-                    else {
-                        if (c.getAllRooms().contains(roomId) ) {
-                            c.sendEvent("room-message", data);
-                        }
-                    }
-
-                }
-            });
-
-            if ( ackSender.isAckRequested() ) { // 클라이언트에서 AckRequest요청을 한다면
-                ackSender.sendAckData("ok");
-            }
-
-        };
+    public DataListener<Message> chatReceiverFromRoom() {
+        return chatRoomService::chatHandle;
     }
 
     public DataListener<Typing> receiveTyping() {
@@ -128,41 +106,18 @@ public class SocketIOModule {
 
     public DataListener<RoomRequestDTO> joinRoom() {
         return (client, data, ackSender) -> {
-            if (client.getAllRooms().contains(data.getRoomId())) { return ; }
-
-            if (!chatRoomService.isRoom(data.getRoomId())) {
-                chatRoomService.createRoom(data.getRoomId(), data.getPassword());
+            boolean flag = chatRoomService.joinRoomHandle(client, data);
+            if (ackSender.isAckRequested()) {
+                ackSender.sendAckData(flag ? "ok" : "failed");
             }
-//            log.info("{}, {}", data.getRoomId(), data.getPassword());
-            if (chatRoomService.joinRoom(data.getRoomId(), data.getPassword(), client.getSessionId().toString())) {
-                client.joinRoom(data.getRoomId());
-                if (ackSender.isAckRequested()) { ackSender.sendAckData("ok"); }
-            }
-            else
-                log.info("room join failed: {}", data.getRoomId());
-            if (ackSender.isAckRequested()) { ackSender.sendAckData("failed"); }
-
-
         };
     }
 
     public DataListener<RoomRequestDTO> leaveRoom() {
         return (client, data, ackSender) -> {
-            if ( !client.getAllRooms().contains(data.getRoomId())) { return ;}
-
-            if (!chatRoomService.isRoom(data.getRoomId())) {
-                return;
-            }
-
-            if (chatRoomService.leaveRoom(data.getRoomId(), client.getSessionId().toString())) {
-                client.leaveRoom(data.getRoomId());
-                if (ackSender.isAckRequested()) { ackSender.sendAckData("ok"); }
-            }
-            else {
-                log.info("leave room failed: {}", data.getRoomId());
-                if (ackSender.isAckRequested()) {
-                    ackSender.sendAckData("failed");
-                }
+            boolean flag = chatRoomService.leaveRoomHandle(client, data);
+            if (ackSender.isAckRequested()) {
+                ackSender.sendAckData(flag ? "ok" : "failed");
             }
         };
     }

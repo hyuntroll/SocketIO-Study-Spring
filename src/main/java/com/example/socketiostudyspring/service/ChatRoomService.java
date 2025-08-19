@@ -1,6 +1,11 @@
 package com.example.socketiostudyspring.service;
 
+import com.corundumstudio.socketio.AckRequest;
+import com.corundumstudio.socketio.SocketIOClient;
+import com.corundumstudio.socketio.SocketIOServer;
+import com.example.socketiostudyspring.model.Message;
 import com.example.socketiostudyspring.model.Room;
+import com.example.socketiostudyspring.model.RoomRequestDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -12,6 +17,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @RequiredArgsConstructor
 public class ChatRoomService {
+
+    private final SocketIOServer server;
+    private final TypingStatusService typingStatusService;
 
     private final Map<String, Room> roomMap = new ConcurrentHashMap<>();
     private final Map<String, List<Room>> userList = new ConcurrentHashMap<>(); // 유저가 어느 채팅방에 있는지 확인하기 위함 hashMap
@@ -27,7 +35,7 @@ public class ChatRoomService {
     public boolean isCorrect(String roomId, String password) {
         if (!isRoom(roomId)) { return true; }
 
-        return !getRoom(roomId).getPassword().equals(password);
+        return getRoom(roomId).getPassword().equals(password);
     }
 
     public Set<String> getRoomsByUser(String userId) {
@@ -71,13 +79,13 @@ public class ChatRoomService {
     }
 
     public boolean joinRoom(String roomId, String password, String userId) {
-        if (!isRoom(roomId) || isCorrect(roomId, password)) { return false; }
+        if (!(isRoom(roomId) && isCorrect(roomId, password))) { return false; }
 
         Room room = getRoom(roomId);
         Set<String> roomSession = room.getSessionSet();
         if (roomSession.contains(userId)) { return false; }
 
-        log.info("room join session: " + userId);
+        log.info("room join session: {}", userId);
 
         roomSession.add(userId);
         room.setSessionCount(room.getSessionCount()+1);
@@ -113,4 +121,49 @@ public class ChatRoomService {
 
     }
 
+    public void chatHandle(SocketIOClient client, Message data, AckRequest ackSender) {
+        String userId = client.getSessionId().toString();
+        String roomId = data.getRoomId();
+        log.info("[{}]{}: {}", roomId,  userId, data.getMessage());
+
+        typingStatusService.removeTyping(userId);
+
+        server.addNamespace("/room")
+                        .getRoomOperations(roomId).sendEvent("message", client, data);
+
+        if (ackSender.isAckRequested()) {
+            ackSender.sendAckData("ok");
+        }
+    }
+
+    public boolean joinRoomHandle(SocketIOClient client, RoomRequestDTO data) {
+        String userId = client.getSessionId().toString();
+        String roomId = data.getRoomId();
+        String password = data.getPassword();
+
+        if (!isRoom(roomId)) {
+            createRoom(roomId, password);
+        }
+
+        if (joinRoom(roomId, password, userId)) {
+            client.joinRoom(roomId);
+            return true;
+        }
+
+        return false;
+    }
+
+    public boolean leaveRoomHandle(SocketIOClient client, RoomRequestDTO data) {
+        String userId = client.getSessionId().toString();
+        String roomId = data.getRoomId();
+
+        if (!isRoom(roomId)) { return false; }
+
+        if (leaveRoom(roomId, userId)) {
+            client.leaveRoom(roomId);
+            return true;
+        }
+
+        return false;
+    }
 }

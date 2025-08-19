@@ -25,5 +25,8 @@ public class ChatService {
 
         server.getBroadcastOperations().sendEvent("message", client, data);
 
+        if (ackSender.isAckRequested()) {
+            ackSender.sendAckData("ok");
+        }
     }
 }
